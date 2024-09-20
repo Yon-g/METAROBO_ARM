@@ -1,9 +1,4 @@
-a = {
-    "a" : [1,2,3],
-    "b" : 2
-}
+l = [1,2,3]
 
-print(a["a"][0])
-print(a["b"])
-
-print(a)
+for id,i in enumerate(l):
+    print(id,i)

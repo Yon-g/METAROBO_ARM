@@ -11,7 +11,6 @@ ENCODER = 0
 ANGLE = 1
 
 class RoboticArm:
-
     def __init__(self, com_n = 4, move_point_json = 'move_point.json'):
         print("Init RoboticArm")
 
@@ -59,6 +58,6 @@ class RoboticArm:
             pass
 
 if __name__ == "__main__":
-    robot = RoboticArm(com_n=7, move_point_json='move_point.json' )
+    robot = RoboticArm(com_n=4, move_point_json='move_point.json' )
 
-    robot.move_ball("BALL0","RED")
+    robot.move_ball("BALL0","GREEN")    
