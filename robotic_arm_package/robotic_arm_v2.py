@@ -3,7 +3,7 @@ import os
 import time
 from pymycobot import MechArm 
 
-BALL_OVER = 0
+BALL_OVER = 0 #공 
 BALL_CATCH = 1
 BALL_LIFT = 2
 
@@ -53,7 +53,7 @@ class RoboticArm:
             put_idx = len(target["POINT"])-2
         else:
             put_idx = 0
-            
+
         for idx in range(len(target["POINT"])):
             if idx == put_idx:
                 self.mc.pump_off()
@@ -81,6 +81,30 @@ class RoboticArm:
 
         for idx in range(len(botton["POINT"])):
             self.moving_cmd(botton,idx,ENCODER)
+
+    def move_mid(self,ball_num):
+        ball = self.arm_point["BALL"+str(ball_num)]
+        mid = self.arm_point["MID"]
+
+        self.moving_cmd(mid,BALL_OVER,ANGLE)
+
+        self.moving_cmd(ball,BALL_OVER,ENCODER)
+        self.mc.pump_on()
+        self.moving_cmd(ball,BALL_CATCH,ENCODER)
+        self.moving_cmd(ball,BALL_LIFT,ENCODER)
+
+        self.moving_cmd(mid,BALL_OVER,ANGLE)
+
+    def spin_pump_on_mid(self,angle):
+        mid = self.arm_point["MID"]
+        cmd = mid["POINT"][BALL_OVER]
+        speed = mid["SPEED"][BALL_OVER]
+
+        cmd[-1] = angle
+        self.mc.send_angles(cmd,speed)
+
+        while self.mc.is_moving() != 0: 
+            pass
 
 if __name__ == "__main__":
     robot = RoboticArm(com_n=4, move_point_json='move_point_v2.json')
