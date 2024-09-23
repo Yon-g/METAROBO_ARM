@@ -34,8 +34,8 @@ class RoboticArm:
         self.arm_point = None
         self.error_count = 0
 
-        self.current_angle_joint5 = 0
-        self.current_encoder_joint5 = 0
+        self.current_angle_joint5 = self.mc.get_angles()[-1]
+        self.current_encoder_joint5 = self.mc.get_encoders()[-1]
 
         self.read_json(move_point_json)
 
@@ -64,7 +64,7 @@ class RoboticArm:
                 print("조인트",i,"번 차이 :",target_joint[i] - cur_pos[i])
                 if abs(target_joint[i] - cur_pos[i]) >= 15:
                     print(f"차이가 15 이상cur_pos준: {target_joint[i]}, cur_pos: {cur_pos[i]}")
-                    self.mc.set_encoders_drag(target_joint,600)
+                    self.mc.set_encoders_drag(target_joint,[300,300,300,300,300,300])
                     time.sleep(0.1)
                     good_for = True
                     break
@@ -90,7 +90,7 @@ class RoboticArm:
         elif motor_mode == ANGLE:
             cmd[-1] = self.current_angle_joint5 # fix last index value 
             self.mc.send_angles(cmd,speed) # send commands in angle mode
-
+        print(cmd[-1])
         time.sleep(0.3)
         while self.mc.is_moving() != 0: 
             pass

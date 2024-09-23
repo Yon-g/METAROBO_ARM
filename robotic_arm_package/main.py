@@ -103,18 +103,49 @@ class Metarobo:
         count_error = defaultdict(int)  # 간단한 카운팅용 객체
 
         while self.camera.get_grep_ball_target(print_grep_ball = True) is None: pass
-        
-        for angle in range(-175,177,20):
-            self.control.spin_pump_on_mid(angle)
-            grep_ball = self.camera.get_grep_ball_target(print_grep_ball = True)
 
-            if grep_ball is None:
-                continue
+        current_angle = int(self.control.current_angle_joint5)
 
-            count_error[grep_ball] += 1
+        if current_angle < 0:
+            target_angle = current_angle + 180
+            if target_angle > 177:
+                target_angle = 177
 
-            if grep_ball.split('_')[-1] == 'error' and count_error[grep_ball] >= 5:
-                return grep_ball  # 5번 이상이면 즉시 리턴
+            for angle in range(current_angle,target_angle,-18):
+                self.control.spin_pump_on_mid(angle)
+                grep_ball = self.camera.get_grep_ball_target(print_grep_ball = True)
+
+                if grep_ball is None:
+                    continue
+
+                count_error[grep_ball] += 1
+
+                if grep_ball.split('_')[-1] == 'error' and count_error[grep_ball] >= 5:
+                    self.control.current_encoder_joint5 = self.control.get_encoders()[-1]
+                    self.control.current_angle_joint5 = self.control.get_angels()[-1]
+
+                    return grep_ball  # 5번 이상이면 즉시 리턴
+        else:
+            target_angle = current_angle - 180
+            if target_angle < -175:
+                target_angle = -175
+
+            for angle in range(target_angle,target_angle,18):
+                self.control.spin_pump_on_mid(angle)
+                grep_ball = self.camera.get_grep_ball_target(print_grep_ball = True)
+
+                if grep_ball is None:
+                    continue
+
+                count_error[grep_ball] += 1
+
+                if grep_ball.split('_')[-1] == 'error' and count_error[grep_ball] >= 5:
+                    self.current_encoder_joint5 = self.control.get_encoders()[-1]
+                    self.current_angle_joint5 = self.control.get_angels()[-1]
+                    return grep_ball  # 5번 이상이면 즉시 리턴
+
+        self.control.current_encoder_joint5 = self.control.get_encoders()[-1]
+        self.control.current_angle_joint5 = self.control.get_angels()[-1]
 
         # 'error'로 끝나는 키 중 가장 많이 나온 값 찾기
         error_keys = {key: count for key, count in count_error.items() if key.split('_')[-1] == 'error'}
@@ -137,6 +168,7 @@ class Metarobo:
         
     def check_error_ball(self,ball_num):
         while self.camera.get_balls_target(print_target=False) is None : time.sleep(1)
+        self.control.move_mid()
         target_box = self.checking_error(ball_num)
         print(target_box)
         self.control.move_mid()
