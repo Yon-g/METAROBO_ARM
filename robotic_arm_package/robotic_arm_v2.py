@@ -33,6 +33,10 @@ class RoboticArm:
         self.mc = MechArm('COM'+str(com_n),115200)
         self.arm_point = None
         self.error_count = 0
+
+        self.current_angle_joint5 = 0
+        self.current_encoder_joint5 = 0
+
         self.read_json(move_point_json)
 
     def read_json(self, move_point_json): 
@@ -48,6 +52,25 @@ class RoboticArm:
         with open(config_path+move_point_json, "r", encoding='utf-8-sig') as f:
             self.arm_point = json.load(f)
             print("Read json")
+    
+    def exe_pump_on(self, target_joint): # 만들어진 시퉌스를 실행할 때
+        # target_pos = target_joint
+        cur_pos = self.mc.get_encoders()
+        move_complete = True
+
+        while move_complete:
+            good_for = False
+            for i in range(len(target_joint)):
+                print("조인트",i,"번 차이 :",target_joint[i] - cur_pos[i])
+                if abs(target_joint[i] - cur_pos[i]) >= 15:
+                    print(f"차이가 15 이상cur_pos준: {target_joint[i]}, cur_pos: {cur_pos[i]}")
+                    self.mc.set_encoders_drag(target_joint,600)
+                    time.sleep(0.1)
+                    good_for = True
+                    break
+            if not good_for:
+                move_complete = False
+                print("도착")
 
     def moving_cmd(self, target, idx, motor_mode):
         """
@@ -62,10 +85,10 @@ class RoboticArm:
         speed = target["SPEED"][idx] # read target speed
 
         if motor_mode == ENCODER:
-            cmd[-1] = 3737 # fix last index value 
+            cmd[-1] = self.current_encoder_joint5 # fix last index value 
             self.mc.set_encoders_drag(cmd,speed) # send commands in encoder mode
         elif motor_mode == ANGLE:
-            cmd[-1] = -148.44 # fix last index value 
+            cmd[-1] = self.current_angle_joint5 # fix last index value 
             self.mc.send_angles(cmd,speed) # send commands in angle mode
 
         time.sleep(0.3)
@@ -91,6 +114,7 @@ class RoboticArm:
         self.moving_cmd(ball,BALL_OVER,ENCODER) # move on ball
         print("ball:",ball_num)
         print("encoder:",self.mc.get_encoders())
+        self.exe_pump_on(ball["POINT"][BALL_OVER])
         self.mc.pump_on() # pump on
         self.moving_cmd(ball,BALL_CATCH,ENCODER) # go down to catch ball
         self.moving_cmd(ball,BALL_LIFT,ENCODER) # lift ball
@@ -163,6 +187,11 @@ class RoboticArm:
         while self.mc.is_moving() != 0: 
             pass
 
+    def get_encoders(self):
+        return self.mc.get_encoders()
+    
+    def get_angels(self):
+        return self.mc.get_encoders()
 if __name__ == "__main__":
     robot = RoboticArm(com_n=4, move_point_json='move_point_v2.json')
 

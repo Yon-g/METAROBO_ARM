@@ -8,7 +8,7 @@ from collections import defaultdict, Counter
 
 # Load the YOLOv8 trained model
 
-MARGIN = 10
+MARGIN = 20 #10
 DISTANCE_THRESHOLD = 50
 
 ROI = [

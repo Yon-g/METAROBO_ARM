@@ -136,7 +136,7 @@ def copy_commands(): # 리스트박스 복사 및 출력
     print('\n동작코드 종료')
    
 def exe_pump_on(target_joint): # 만들어진 시퉌스를 실행할 때
-    target_pos = target_joint
+    # target_pos = target_joint
     cur_pos = mc.get_encoders()
     move_complete = True
 
