@@ -20,15 +20,6 @@ ROI = [
         {"name": "ball5", "x1": 81,  "y1": 239, "x2": 161, "y2": 319, "area": 5}
     ]
 
-BALL_KEY = {
-    "blue" : "BLUE",
-    "blue_error" : "ERROR",
-    "green" : "GREEN",
-    "green_error" : "ERROR",
-    "red" : "RED",
-    "red_error" : "ERROR",
-}
-
 roi_1_coords = (23, 4, 608, 317) # (x1, y1, x2, y2)
 roi_2_coords = (31, 321, 593, 471)  # (x1, y1, x2, y2)
 
@@ -80,7 +71,7 @@ class CameraDetection:
             conf = confidences[i]
             if conf >= 0.50:  # 정확도 50% 이상인지 확인
                 cls = int(class_ids[i])
-                label = BALL_KEY[self.model.names[cls]]  # 클래스 이름
+                label = self.model.names[cls]  # 클래스 이름
                 
                 color = (0, 255, 0)  # 경계박스 색(초록색으로 경계선 생성)
                 cv2.rectangle(self.frame, (x1, y1), (x2, y2), color, 2)
