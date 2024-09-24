@@ -18,13 +18,13 @@ class Metarobo:
         
         while self.camera.get_balls_target(print_target=False) is None : time.sleep(1)
 
-        ball_catch_sequence, catch_bool_data, color_dic = self.get_sequence()
+        ball_catch_sequence, catch_bool_data, color_dic, sequence_idx = self.get_sequence()
 
         print("ball sequence : ", ball_catch_sequence)
-        
+        self.control.move_mid()
         self.control.press_buzzer()
 
-        for ball_info, catch_bool in zip(ball_catch_sequence,catch_bool_data):
+        for idx, (ball_info, catch_bool) in enumerate(zip(ball_catch_sequence,catch_bool_data)):
             print("현재 공 : ", ball_info[1])
             print("공 색 : ",ball_info[0])
             print("확인 여부 :,", catch_bool)
@@ -35,11 +35,11 @@ class Metarobo:
                 error_check = split_list[-1]
                 color = split_list[0]
                 if error_check != "error":
-                    ball_catch_sequence[color_dic[color]][0] = color + "_error"
+                    ball_catch_sequence[sequence_idx.index(color_dic[color])][0] = color + "_error"
             else:
                 self.control.move_ball_to_target(ball_info[1],ball_info[0])
-
-        self.control.press_buzzer()
+             
+        self.control.press_buzzer(start_idx=1)
 
         self.camera.stop()
         return 0    
@@ -58,8 +58,8 @@ class Metarobo:
             indices, found = self.find_and_store_indices(color, target_list)
             if found:
                 # 조합된 공이 있을 경우, normal은 맨 앞에, error는 맨 뒤에 추가
-                normal_ball = (color, indices[0][1], 'mode1')  # (색깔, 인덱스, mode1)
-                error_ball = (color, indices[1][1], 'mode1')   # (색깔, 인덱스, mode1)
+                normal_ball = [color, indices[0][1], 'mode1']  # (색깔, 인덱스, mode1)
+                error_ball = [color+"_error", indices[1][1], 'mode1']   # (색깔, 인덱스, mode1)
                 sort_sequence.insert(0, normal_ball)
                 sort_sequence.append(error_ball)
                 used_indices.extend([indices[0][1], indices[1][1]])  # 사용된 인덱스 기록
@@ -75,22 +75,25 @@ class Metarobo:
                 color = color_info.split('_')[0]  # 색상 추출
                 
                 if color_modes[color] == 'mode1':
-                    sort_sequence.insert(0,(color, i, 'mode1'))  # 조합되지 않은 공 추가
+                    sort_sequence.insert(0,[color, i, 'mode1'])  # 조합되지 않은 공 추가
                     color_modes[color] = 'mode2'  # 다음 동일 색상은 mode1로 설정
                     color_dic[color] = i     
 
                 elif color_modes[color] == 'mode2':
-                    sort_sequence.insert(0,(color, i, 'mode2'))  # 이미 확인된 동일 색상 공을 mode1로 추가
+                    sort_sequence.insert(0,[color, i, 'mode2'])  # 이미 확인된 동일 색상 공을 mode1로 추가
 
                 else :
                     pass
                 
-                    
+        sequence_idx = []
+        for i in sort_sequence:
+            sequence_idx.append(i[1])
 
         mode_boolean_list = [False if mode == 'mode1' else True for _, _, mode in sort_sequence]
-        return sort_sequence, mode_boolean_list, color_dic
+        return sort_sequence, mode_boolean_list, color_dic, sequence_idx
     
     def checking_error(self, ball_num):
+        self.control.move_mid()
         self.control.grep_ball(ball_num)
         self.control.move_mid()
 
@@ -98,7 +101,7 @@ class Metarobo:
 
         while self.camera.get_grep_ball_target(print_grep_ball = True) is None: pass
         
-        for angle in range(-175,177,10):
+        for angle in range(-175,6,30):
             self.control.spin_pump_on_mid(angle)
             grep_ball = self.camera.get_grep_ball_target(print_grep_ball = True)
 
@@ -106,8 +109,7 @@ class Metarobo:
                 continue
 
             count_error[grep_ball] += 1
-
-            if grep_ball.split('_')[-1] == 'error' and count_error[grep_ball] >= 5:
+            if grep_ball.split('_')[-1] == 'error' and count_error[grep_ball] >= 3:
                 return grep_ball  # 5번 이상이면 즉시 리턴
 
         # 'error'로 끝나는 키 중 가장 많이 나온 값 찾기
@@ -132,7 +134,6 @@ class Metarobo:
     def check_error_ball(self,ball_num):
         while self.camera.get_balls_target(print_target=False) is None : time.sleep(1)
         target_box = self.checking_error(ball_num)
-        print(target_box)
         self.control.move_mid()
         self.control.drop_target_box(target_box)
         self.control.move_mid()

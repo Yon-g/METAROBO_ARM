@@ -26,8 +26,24 @@ def draw_rectangle(event, x, y, flags, param):
         roi_list.append((ix, iy, x, y))
         cv2.imshow('image', img)
 
-# 이미지 불러오기
-img = cv2.imread('C:\\Users\\k-factory\\Desktop\\METAROBO_ARM\\robotic_arm_package\\captured_image.jpg')
+# 카메라에서 프레임 캡처
+cap = cv2.VideoCapture(1,cv2.CAP_DSHOW)  # 0번 카메라 장치(기본 웹캠)를 사용
+if not cap.isOpened():
+    print("카메라를 열 수 없습니다.")
+    exit()
+
+# 카메라에서 한 장의 프레임을 캡처
+ret, img = cap.read()
+if not ret:
+    print("프레임을 가져올 수 없습니다.")
+    cap.release()
+    exit()
+
+# 캡처한 이미지 저장 (원한다면 저장하지 않고 바로 사용 가능)
+# cv2.imwrite('captured_frame.jpg', img)
+
+# 카메라 종료
+cap.release()
 
 # 윈도우 생성 및 마우스 콜백 함수 설정
 cv2.namedWindow('image')
@@ -35,7 +51,7 @@ cv2.setMouseCallback('image', draw_rectangle)
 
 print("이미지에서 ROI를 선택하세요. 좌클릭으로 드래그하여 ROI를 선택하세요.")
 
-# ROI 선택 루프 (6개의 ROI를 선택할 때까지 반복)
+# ROI 선택 루프 (2개의 ROI를 선택할 때까지 반복)
 while len(roi_list) < n_rois:
     cv2.imshow('image', img)
     if cv2.waitKey(1) & 0xFF == 27:  # ESC 키를 누르면 종료

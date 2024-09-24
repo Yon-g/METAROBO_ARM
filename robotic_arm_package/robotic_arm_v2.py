@@ -97,7 +97,8 @@ class RoboticArm:
         print("--------")
 
 
-    def drop_target_box(self, target_box):
+
+    def drop_target_box(self, target_box, slow = False):
         """
         Drops the ball into the target box, or if the target box is marked as "ERROR", 
         drops it in an error location.
@@ -116,11 +117,16 @@ class RoboticArm:
             put_idx = len(target["POINT"])-2
         else:
             put_idx = 0
-
+        if slow:
+            sleep_idx = len(target["POINT"]) - 2
+        else:
+            sleep_idx = -1
         for idx in range(len(target["POINT"])):
             if idx == put_idx:
                 self.mc.pump_off()
             self.moving_cmd(target, idx, ANGLE)
+            if idx == sleep_idx:
+                time.sleep(0.3)
 
     def move_ball_to_target(self, ball_num, target_box):
         """
@@ -131,19 +137,26 @@ class RoboticArm:
         target_box (str): The target box where the ball should be moved ("RED", "BLUE", etc.).
         """
         self.move_mid() # move mid
-        self.grep_ball(ball_num) # grep ball 
-        self.move_mid() # move mid
-        self.drop_target_box(target_box) # move target box and drop the ball
+        self.grep_ball(ball_num) # grep ball
 
-    def press_buzzer(self):
+        target = BALL_KEY[target_box]
+        if target != "ERROR":
+            self.mc.pump_off()
+        if ball_num == 5 and target_box == "green":
+            self.drop_target_box(target_box, slow = True) # move target box and drop the ball    
+        else:
+            self.drop_target_box(target_box) # move target box and drop the ball    
+
+        # self.move_mid() # move mid
+
+    def press_buzzer(self,start_idx = 0):
         """
         Moves the robotic arm to press a buzzer.
         """
-        self.move_mid()
 
         botton = self.arm_point["BUZZER"]
 
-        for idx in range(len(botton["POINT"])):
+        for idx in range(start_idx,len(botton["POINT"])):
             self.moving_cmd(botton, idx, ENCODER)
 
     def spin_pump_on_mid(self, angle):
@@ -163,9 +176,12 @@ class RoboticArm:
         while self.mc.is_moving() != 0: 
             pass
 
+    def move_to_last_error(self,ball_num, target_box):
+        self.move_mid() # move mid
+        self.grep_ball(ball_num) # grep ball 
+        # self.move_mid() # move mid
+        self.drop_target_box(target_box) # move target box and drop the ball
+        self.press_buzzer()
+
 if __name__ == "__main__":
     robot = RoboticArm(com_n=4, move_point_json='move_point_v2.json')
-
-    robot.move_ball("BALL0","RED")
-    robot.move_ball("BALL3","BLUE")
-    robot.move_ball("BALL4","GREEN")

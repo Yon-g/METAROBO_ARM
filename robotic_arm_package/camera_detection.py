@@ -72,7 +72,7 @@ class CameraDetection:
             if conf >= 0.50:  # 정확도 50% 이상인지 확인
                 cls = int(class_ids[i])
                 label = self.model.names[cls]  # 클래스 이름
-                
+
                 color = (0, 255, 0)  # 경계박스 색(초록색으로 경계선 생성)
                 cv2.rectangle(self.frame, (x1, y1), (x2, y2), color, 2)
                 cv2.putText(self.frame, f"{label} ({conf:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
@@ -82,25 +82,46 @@ class CameraDetection:
                 center_box_y = (y1 + y2) // 2
                 new_center = (center_x, center_box_y)
 
+                # if label == "red":
+                #     print("red", new_center)
+                # elif label == "green_error":
+                #     print("green_error", new_center)
+
                 # 중심선 근처에 걸친 객체는 가장 가까운 구역에 포함
+                key = (center_x, center_box_y)  # Use both center_x and center_box_y as key
+
                 if center_y - MARGIN <= center_box_y <= center_y + MARGIN:
                     if center_box_y > center_y:
                         if not self.is_near_existing_object(new_center, self.bottom_objects_data, DISTANCE_THRESHOLD):
-                            self.bottom_objects_data[center_box_y]["labels"][label] += 1
-                            self.bottom_objects_data[center_box_y]["coordinates"] = new_center
+                            self.bottom_objects_data[key]["labels"][label] += 1
+                            self.bottom_objects_data[key]["coordinates"] = new_center
                     else:
                         if not self.is_near_existing_object(new_center, self.top_objects_data, DISTANCE_THRESHOLD):
-                            self.top_objects_data[center_box_y]["labels"][label] += 1
-                            self.top_objects_data[center_box_y]["coordinates"] = new_center
+                            self.top_objects_data[key]["labels"][label] += 1
+                            self.top_objects_data[key]["coordinates"] = new_center
                 elif center_box_y < center_y:  # 위쪽에 있는 경우
                     if not self.is_near_existing_object(new_center, self.top_objects_data, DISTANCE_THRESHOLD):
-                        self.top_objects_data[center_box_y]["labels"][label] += 1
-                        self.top_objects_data[center_box_y]["coordinates"] = new_center
+                        self.top_objects_data[key]["labels"][label] += 1
+                        self.top_objects_data[key]["coordinates"] = new_center
                 else:  # 아래쪽에 있는 경우
                     if not self.is_near_existing_object(new_center, self.bottom_objects_data, DISTANCE_THRESHOLD):
-                        self.bottom_objects_data[center_box_y]["labels"][label] += 1
-                        self.bottom_objects_data[center_box_y]["coordinates"] = new_center
-        
+                        self.bottom_objects_data[key]["labels"][label] += 1
+                        self.bottom_objects_data[key]["coordinates"] = new_center
+
+    def display_top_objects(self):
+        """self.top_objects_data에 저장된 좌표들을 이미지에 표시하는 함수"""
+        for obj_info in self.bottom_objects_data.values():
+            coordinates = obj_info["coordinates"]
+            labels = obj_info["labels"]
+            if coordinates is not None:
+                # 객체의 좌표에 원(circle)으로 표시
+                cv2.circle(self.frame, coordinates, 5, (255, 0, 0), -1)  # 파란색 원
+
+                # 객체의 라벨을 표시
+                for label, count in labels.items():
+                    if count > 0:  # 라벨이 존재하는 경우
+                        cv2.putText(self.frame, f"{label} (count: {count})", (coordinates[0], coordinates[1] - 10), 
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
     def update(self):
         count = 0
 
@@ -139,7 +160,7 @@ class CameraDetection:
 
             for result in results_roi_2:
                 self.detection_ball(result, roi_2_coords[0], roi_2_coords[1], center_y)
-            
+            # self.display_top_objects()
             count+=1
 
             if count%10 == 0:
@@ -154,7 +175,7 @@ class CameraDetection:
                 cv2.putText(self.frame, f"{top_most_common_label}", (top_coordinates[0] - 60, top_coordinates[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
                 self.grep_ball = top_most_common_label
             
-
+            # print(self.bottom_objects_data)
             # 아래쪽 구역의 객체 정보 출력
             for obj_key, obj_info in self.bottom_objects_data.items():
                 bottom_most_common_label, _ = obj_info["labels"].most_common(1)[0]  # 가장 많이 나온 라벨
